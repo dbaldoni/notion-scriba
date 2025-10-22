@@ -2,7 +2,7 @@
 
 **AI-powered documentation generator with multi-LLM support and Notion integration**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -236,6 +236,15 @@ Options:
   --list-providers         Show available LLM providers
   --help                   Show this help message
 ```
+
+## 📜 License
+
+Notion Scriba is released under the GNU General Public License v3.0 (GPLv3).
+You are free to use, modify, and distribute this software, but any
+distributed modified versions must also be licensed under GPLv3.
+
+See the full license in the `LICENSE` file.
+
 
 ---
 
