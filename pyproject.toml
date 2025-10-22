@@ -3,20 +3,20 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "notion-docs-synapse"
+name = "notion-scriba"
 version = "1.0.0"
-description = "AI-powered documentation generator with multi-LLM support and Notion integration"
+description = "AI-powered bilingual documentation generator with multi-LLM support and Notion integration"
 authors = [
-    {name = "Notion Docs Synapse Contributors"}
+    {name = "Davide Baldoni", email = "davide@example.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
-keywords = ["documentation", "ai", "llm", "notion", "openai", "claude", "gemini"]
+license = {text = "GPL-3.0-or-later"}
+keywords = ["documentation", "ai", "llm", "notion", "openai", "claude", "gemini", "bilingual", "gpl"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -55,15 +55,14 @@ dev = [
 ]
 
 [project.scripts]
-notion-docs = "notion_docs_synapse.cli:main"
-notion-docs-setup = "notion_docs_synapse.setup_wizard:run_setup_wizard"
-notion-docs-setup = "notion_docs_synapse.setup_wizard:run_setup_wizard"
+scriba = "notion_scriba.cli:main"
+scriba-setup = "notion_scriba.setup_wizard:run_setup_wizard"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/notion-docs-synapse"
-Documentation = "https://github.com/yourusername/notion-docs-synapse/blob/main/docs"
-Repository = "https://github.com/yourusername/notion-docs-synapse"
-Issues = "https://github.com/yourusername/notion-docs-synapse/issues"
+Homepage = "https://github.com/dbaldoni/notion-scriba"
+Documentation = "https://github.com/dbaldoni/notion-scriba/blob/main/README.md"
+Repository = "https://github.com/dbaldoni/notion-scriba"
+Issues = "https://github.com/dbaldoni/notion-scriba/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
