@@ -26,20 +26,20 @@
 
 ```bash
 # Basic installation (OpenAI + DeepSeek support)
-pip install notion-docs-synapse
+pip install notion-scriba
 
 # With Anthropic Claude support
-pip install notion-docs-synapse[anthropic]
+pip install notion-scriba[anthropic]
 
 # With Google Gemini support
-pip install notion-docs-synapse[google]
+pip install notion-scriba[google]
 
 # With all providers
-pip install notion-docs-synapse[all]
+pip install notion-scriba[all]
 
 # From source
-git clone https://github.com/yourusername/notion-docs-synapse
-cd notion-docs-synapse
+git clone https://github.com/dbaldoni/notion-scriba
+cd notion-scriba
 pip install -e .
 ```
 
@@ -49,7 +49,7 @@ pip install -e .
 
 ```bash
 # Run the setup wizard
-notion-docs setup
+scriba-setup
 
 # Follow the prompts to:
 # 1. Enter your Notion integration token
@@ -70,8 +70,8 @@ cp .env.example .env
 ```bash
 # Notion configuration
 NOTION_TOKEN=secret_your-token-here
-NOTION_DB_IT=your-database-id  # For database mode
-NOTION_DB_EN=your-database-id  # Or use pages with NOTION_PAGE_IT/EN
+NOTION_PAGE_ID=your-page-id     # For single page mode
+NOTION_DB=your-database-id      # For database mode
 
 # Choose your LLM provider
 LLM_PROVIDER=openai  # or: anthropic, google, deepseek, ollama
@@ -86,23 +86,23 @@ OPENAI_API_KEY=sk-your-key-here
 
 ```bash
 # Generate documentation for a component
-notion-docs --component myapp --template technical-deep-dive
+scriba --component myapp --template technical-deep-dive
 
 # Use different LLM provider
-notion-docs --provider anthropic --model claude-3-5-sonnet-20241022 \
+scriba --provider anthropic --model claude-3-5-sonnet-20241022 \
   --component myapp
 
 # Cost-effective option with DeepSeek
-notion-docs --provider deepseek --component myapp
+scriba --provider deepseek --component myapp
 
 # Completely free with local Ollama
-notion-docs --provider ollama --model llama3.1 --component myapp
+scriba --provider ollama --model llama3.1 --component myapp
 
-# Preserve existing Notion content
-notion-docs --component myapp --merge-mode
+# Interactive mode with file autocomplete
+scriba -i
 
 # Quick mode with custom prompt
-notion-docs --quick "Generate API documentation for authentication module"
+scriba --quick "Generate API documentation for authentication module"
 ```
 
 ---
@@ -125,7 +125,7 @@ notion-docs --quick "Generate API documentation for authentication module"
 ```bash
 # Get API key from: https://platform.openai.com/api-keys
 export OPENAI_API_KEY="sk-your-key-here"
-notion-docs --provider openai --model gpt-4o --component myapp
+scriba --provider openai --model gpt-4o --component myapp
 ```
 </details>
 
@@ -133,10 +133,10 @@ notion-docs --provider openai --model gpt-4o --component myapp
 <summary><b>Anthropic (Claude)</b></summary>
 
 ```bash
-# Install: pip install notion-docs-synapse[anthropic]
+# Install: pip install notion-scriba[anthropic]
 # Get API key from: https://console.anthropic.com/
 export ANTHROPIC_API_KEY="sk-ant-your-key-here"
-notion-docs --provider anthropic --model claude-3-5-sonnet-20241022 --component myapp
+scriba --provider anthropic --model claude-3-5-sonnet-20241022 --component myapp
 ```
 </details>
 
@@ -144,10 +144,10 @@ notion-docs --provider anthropic --model claude-3-5-sonnet-20241022 --component 
 <summary><b>Google (Gemini)</b></summary>
 
 ```bash
-# Install: pip install notion-docs-synapse[google]
+# Install: pip install notion-scriba[google]
 # Get API key from: https://makersuite.google.com/app/apikey
 export GOOGLE_API_KEY="your-key-here"
-notion-docs --provider google --model gemini-1.5-pro --component myapp
+scriba --provider google --model gemini-1.5-pro --component myapp
 ```
 </details>
 
@@ -157,7 +157,7 @@ notion-docs --provider google --model gemini-1.5-pro --component myapp
 ```bash
 # Get API key from: https://platform.deepseek.com/
 export DEEPSEEK_API_KEY="your-key-here"
-notion-docs --provider deepseek --model deepseek-chat --component myapp
+scriba --provider deepseek --model deepseek-chat --component myapp
 ```
 </details>
 
@@ -169,7 +169,7 @@ notion-docs --provider deepseek --model deepseek-chat --component myapp
 # Pull model: ollama pull llama3.1
 # Start Ollama: ollama serve
 
-notion-docs --provider ollama --model llama3.1 --component myapp
+scriba --provider ollama --model llama3.1 --component myapp
 ```
 </details>
 
@@ -210,7 +210,7 @@ notion-docs --provider ollama --model llama3.1 --component myapp
 ## 🎯 CLI Reference
 
 ```bash
-notion-docs [OPTIONS]
+scriba [OPTIONS]
 
 Options:
   # Component & Template
@@ -226,11 +226,11 @@ Options:
   --max-tokens INT         Maximum tokens to generate (default: 4000)
 
   # Workflow Options
+  --interactive, -i        Interactive mode with file autocomplete
   --quick TEXT             Quick mode with direct prompt
   --no-refine              Skip interactive prompt refinement
   --auto-code-analysis     Enable automatic code analysis
   --no-code-analysis       Disable code analysis
-  --merge-mode             Preserve existing Notion content
 
   # Information
   --list-providers         Show available LLM providers
@@ -251,8 +251,8 @@ See the full license in the `LICENSE` file.
 ## 🏗️ Architecture
 
 ```
-notion-docs-synapse/
-├── src/notion_docs_synapse/
+notion-scriba/
+├── src/notion_scriba/
 │   ├── llm/                    # Multi-LLM abstraction layer
 │   │   ├── base.py            # Abstract base class
 │   │   ├── factory.py         # Provider factory
@@ -265,6 +265,8 @@ notion-docs-synapse/
 │   ├── doc_generator.py       # Documentation generation
 │   ├── notion_client.py       # Notion API integration
 │   ├── templates.py           # Documentation templates
+│   ├── interactive_mode.py    # Interactive file selector
+│   ├── setup_wizard.py        # Configuration wizard
 │   └── cli.py                 # Command-line interface
 ├── tests/                     # Test suite
 ├── docs/                      # Documentation
@@ -278,7 +280,7 @@ notion-docs-synapse/
 ### Custom Templates
 
 ```python
-from notion_docs_synapse import DocGenerator
+from notion_scriba import DocGenerator
 
 generator = DocGenerator(provider="openai", model="gpt-4o")
 
@@ -300,7 +302,7 @@ result = generator.generate(
 ### Programmatic Usage
 
 ```python
-from notion_docs_synapse.llm import LLMProviderFactory, LLMConfig
+from notion_scriba.llm import LLMProviderFactory, LLMConfig
 
 # Initialize provider
 config = LLMConfig(
@@ -326,8 +328,8 @@ print(response)
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/notion-docs-synapse
-cd notion-docs-synapse
+git clone https://github.com/dbaldoni/notion-scriba
+cd notion-scriba
 
 # Create virtual environment
 python -m venv venv
@@ -340,7 +342,7 @@ pip install -e ".[dev]"
 pytest
 
 # Run tests with coverage
-pytest --cov=notion_docs_synapse
+pytest --cov=notion_scriba
 
 # Format code
 black src/ tests/
@@ -353,7 +355,9 @@ ruff check src/ tests/
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+This project is licensed under GPLv3. By contributing, you agree that your contributions will be licensed under the same license.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
@@ -363,31 +367,16 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- OpenAI for GPT models
-- Anthropic for Claude
-- Google for Gemini
-- DeepSeek for cost-effective AI
-- Ollama team for local LLM support
-- Notion for their excellent API
-
----
-
-## 📧 Support
+##  Support
 
 - 📚 [Documentation](docs/)
-- 🐛 [Issue Tracker](https://github.com/yourusername/notion-docs-synapse/issues)
-- 💬 [Discussions](https://github.com/yourusername/notion-docs-synapse/discussions)
+- 🐛 [Issue Tracker](https://github.com/dbaldoni/notion-scriba/issues)
+- 💬 [Discussions](https://github.com/dbaldoni/notion-scriba/discussions)
 
 ---
 
 <p align="center">
-  Made with ❤️ by the Notion Docs Synapse community
+  <strong>🏛️ Notion Scriba</strong><br>
+  <em>"Verba volant, scripta manent"</em><br>
+  Made with ❤️ by <a href="https://github.com/dbaldoni">Davide Baldoni</a>
 </p>
