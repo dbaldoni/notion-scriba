@@ -1,4 +1,4 @@
-# 🏛️ Notion Docs Synapse
+# 🏛️ Notion Scriba
 
 **AI-powered documentation generator with multi-LLM support and Notion integration**
 
