@@ -1,0 +1,116 @@
+name: Vitruvyan Docs Auto-Generation
+on:
+  push:
+    branches: [main, develop, vitruvyan-docs-sync]
+    paths:
+      - 'core/langgraph/**'
+      - 'core/crewai/**'
+      - 'core/logic/neural_engine/**'
+      - 'core/sentiment/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Permette trigger manuale dalla UI GitHub
+    inputs:
+      component:
+        description: 'Componente specifico da aggiornare (opzionale)'
+        required: false
+        type: choice
+        options:
+        - 'all'
+        - 'langgraph'
+        - 'crewai'
+        - 'neural_engine'
+        - 'sentiment'
+        default: 'all'
+      force_regenerate:
+        description: 'Forza rigenerazione completa'
+        required: false
+        type: boolean
+        default: false
+    
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # fetch full history to make git diff HEAD~1 reliable
+          fetch-depth: 0
+          # keep submodules if any (uncomment if needed)
+          # submodules: 'recursive'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt || true
+          pip install openai requests || true
+          
+      - name: Detect Changed Components
+        id: changes
+        run: |
+          echo "Detecting which components changed..."
+
+          # Ensure we have at least one previous commit to diff against
+          if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            echo "No HEAD~1 available — attempting to fetch more history"
+            # Try to unshallow if checkout was shallow
+            git fetch --no-tags --prune --depth=50 || git fetch --unshallow || true
+          fi
+
+          # Determine a safe base for the diff
+          DIFF_BASE="HEAD~1"
+          if ! git rev-parse --verify "$DIFF_BASE" >/dev/null 2>&1; then
+            DIFF_BASE=$(git rev-list --max-parents=0 HEAD || echo "")
+            echo "Falling back to initial commit: $DIFF_BASE"
+          fi
+
+          # Produce changed files list (don't fail the step)
+          git diff --name-only "$DIFF_BASE" > /tmp/changed_files.txt || true
+          echo "Changed files:"
+          sed -n '1,200p' /tmp/changed_files.txt || true
+
+          # Safely check for component paths
+          if grep -q "core/langgraph/" /tmp/changed_files.txt 2>/dev/null; then
+            echo "langgraph_changed=true" >> $GITHUB_OUTPUT
+          fi
+          if grep -q "core/crewai/" /tmp/changed_files.txt 2>/dev/null; then
+            echo "crewai_changed=true" >> $GITHUB_OUTPUT
+          fi
+          if grep -q "core/logic/neural_engine/" /tmp/changed_files.txt 2>/dev/null; then
+            echo "neural_changed=true" >> $GITHUB_OUTPUT
+          fi
+          if grep -q "core/sentiment/" /tmp/changed_files.txt 2>/dev/null; then
+            echo "sentiment_changed=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Generate Investment Reports
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DB_IT: ${{ secrets.NOTION_DB_IT }}
+          NOTION_DB_EN: ${{ secrets.NOTION_DB_EN }}
+          COMPONENT_FILTER: ${{ github.event.inputs.component || 'all' }}
+          FORCE_REGENERATE: ${{ github.event.inputs.force_regenerate || 'false' }}
+        run: |
+          cd core/vitruvyan_docs_synapse
+          echo "🚀 Generazione report per: $COMPONENT_FILTER"
+          if [ "$COMPONENT_FILTER" != "all" ]; then
+            echo "📋 Generazione selettiva per componente: $COMPONENT_FILTER"
+            python3 curator_agent.py --component $COMPONENT_FILTER
+          else
+            echo "📋 Generazione completa di tutti i componenti"
+            python3 curator_agent.py
+          fi
+          
+      - name: Commit Updated Docs
+        run: |
+          git config --local user.email "docs@vitruvyan.com"
+          git config --local user.name "Vitruvyan Docs Synapse"
+          git add docs_new/generated/ || true
+          git commit -m "🤖 Auto-update investment reports" || exit 0
+          git push || true
