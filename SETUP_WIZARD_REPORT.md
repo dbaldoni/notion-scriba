@@ -9,7 +9,7 @@
 ## 📋 What Was Implemented
 
 ### 1. **Interactive Setup Wizard** ✅
-**File:** `src/notion_docs_synapse/setup_wizard.py` (330+ LOC)
+**File:** `src/notion_scriba/setup_wizard.py` (330+ LOC)
 
 **Features:**
 - ✅ Welcome message with clear instructions
@@ -118,8 +118,8 @@ NOTION_DB_EN=your-database-id-here
 **`pyproject.toml` Updated:**
 ```toml
 [project.scripts]
-notion-docs = "notion_docs_synapse.cli:main"
-notion-docs-setup = "notion_docs_synapse.setup_wizard:run_setup_wizard"
+scriba = "notion_scriba.cli:main"
+scriba-setup = "notion_scriba.setup_wizard:run_setup_wizard"
 ```
 
 **`README.md` Updated:**
@@ -196,7 +196,7 @@ notion-docs-setup
 
 ### **Command 3: Via Python module**
 ```bash
-python -m notion_docs_synapse.setup_wizard
+python -m notion_scriba.setup_wizard
 ```
 
 ---

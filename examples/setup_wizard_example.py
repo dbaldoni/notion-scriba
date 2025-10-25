@@ -64,7 +64,7 @@ LLM_PROVIDER=openai
 
 def test_wizard_programmatically():
     """Example of running wizard programmatically (for testing)."""
-    from notion_docs_synapse.setup_wizard import NotionSetupWizard
+    from notion_scriba.setup_wizard import NotionSetupWizard
     
     wizard = NotionSetupWizard()
     
@@ -72,9 +72,9 @@ def test_wizard_programmatically():
     # For automated testing, you'd need to mock stdin
     
     print("To run wizard:")
-    print("  python -m notion_docs_synapse.setup_wizard")
+    print("  python -m notion_scriba.setup_wizard")
     print("  # or")
-    print("  notion-docs-setup")
+    print("  scriba-setup")
 
 
 if __name__ == "__main__":

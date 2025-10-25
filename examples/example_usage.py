@@ -54,7 +54,7 @@ def main():
     
     # Example: analyze current project
     analysis = analyzer.analyze_directory(
-        "src/notion_docs_synapse",
+        "src/notion_scriba",
         max_files=10
     )
     
@@ -72,7 +72,7 @@ def main():
     
     try:
         it_doc, en_doc = doc_gen.generate_bilingual(
-            component="notion_docs_synapse",
+            component="notion_scriba",
             template_name="technical-deep-dive",
             user_prompt="Generate comprehensive technical documentation for this project",
             code_analysis=analysis

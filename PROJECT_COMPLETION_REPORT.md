@@ -8,7 +8,7 @@
 
 ## 📊 Project Overview
 
-**Notion Docs Synapse** is now a **production-ready** standalone AI documentation generator with multi-LLM support and direct Notion synchronization. The system was successfully extracted from the Vitruvyan project and rebuilt as an independent, enterprise-grade tool.
+**Notion Docs Synapse** is now a **production-ready** standalone AI documentation generator with multi-LLM support and direct Notion synchronization. The system was successfully extracted and rebuilt as an independent, enterprise-grade tool.
 
 ---
 
@@ -70,7 +70,7 @@
 
 ### File Breakdown
 ```
-src/notion_docs_synapse/
+src/notion_scriba/
 ├── cli.py                    (500 LOC) - CLI interface
 ├── notion_client.py          (570 LOC) - Notion API integration
 ├── code_analyzer.py          (400 LOC) - Python analysis
@@ -212,7 +212,7 @@ notion-docs --component myapp --merge-mode
 ## 🔧 Programmatic API
 
 ```python
-from notion_docs_synapse import (
+from notion_scriba import (
     LLMProviderFactory,
     LLMConfig,
     CodeAnalyzer,
@@ -296,7 +296,7 @@ client.update_page("MyApp", en_doc, lang="en", create_backup=True)
 
 | Goal | Status | Notes |
 |------|--------|-------|
-| **Standalone Repository** | ✅ | Complete separation from Vitruvyan |
+| **Standalone Repository** | ✅ | Complete separation from the original project |
 | **Multi-LLM Support** | ✅ | 5 providers, 15+ models |
 | **Bilingual Generation** | ✅ | Italian + English simultaneous |
 | **Notion Integration** | ✅ | Pages + Database modes |
@@ -309,7 +309,7 @@ client.update_page("MyApp", en_doc, lang="en", create_backup=True)
 
 ## 💡 Key Achievements
 
-1. **Complete Extraction**: Successfully extracted Notion docs system from Vitruvyan into standalone project
+1. **Complete Extraction**: Successfully extracted Notion docs system into a standalone project
 2. **Multi-LLM Architecture**: Built flexible system supporting 5 providers with easy extensibility
 3. **Enterprise-Grade**: Professional CLI, comprehensive documentation, safety features
 4. **Cost Optimization**: 50x cost range from free (Ollama) to premium (GPT-4)
@@ -341,7 +341,7 @@ client.update_page("MyApp", en_doc, lang="en", create_backup=True)
 
 ## 🏆 Conclusion
 
-**Notion Docs Synapse** is now a **complete, production-ready AI documentation generator**. The system successfully achieves all original goals:
+**Notion Scriba** is now a **complete, production-ready AI documentation generator**. The system successfully achieves all original goals:
 
 ✅ Standalone repository with professional structure  
 ✅ Multi-LLM support (5 providers, 15+ models)  
