@@ -15,7 +15,6 @@
 - 🤖 **Multi-LLM Support** - Choose from OpenAI, Claude, Gemini, DeepSeek, or local models (Ollama)
 - 🔍 **Automatic Code Analysis** - Extracts classes, functions, APIs from your codebase
 - 📝 **Enterprise Templates** - 4 professional doc templates for different audiences
-- 🌍 **Bilingual Generation** - Simultaneous Italian + English documentation
 - 🔒 **Safe Updates** - Automatic backup before overwriting Notion pages
 - 🔀 **Merge Mode** - Preserves existing content when updating
 - 💰 **Cost Flexibility** - From premium (GPT-4) to ultra-cheap (DeepSeek) to free (Ollama)

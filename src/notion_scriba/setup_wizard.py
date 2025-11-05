@@ -1,4 +1,4 @@
-# Notion Scriba - AI-powered bilingual documentation generator
+# Notion Scriba - AI-powered documentation generator
 # Copyright (C) 2025 Davide Baldoni
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,380 +15,403 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-"""Interactive setup wizard for Notion Docs Synapse configuration."""
+"""
+Interactive setup wizard for Notion Scriba configuration.
+
+Guides users through:
+1. Notion integration token
+2. Mode selection (Page or Database)
+3. ID collection and validation
+4. Configuration file generation
+"""
 
 import os
+import re
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Tuple
-import requests
+from typing import Dict, Optional
+
+try:
+    import requests
+except ImportError:
+    requests = None
 
 
-class NotionSetupWizard:
-    """Interactive setup wizard for configuring Notion integration.
-    
-    Guides users through:
-    1. Notion token configuration
-    2. Choice between Pages or Database mode
-    3. Collection of appropriate IDs
-    4. Validation of Notion connection
-    5. Saving configuration to .env file
-    """
+class SetupWizard:
+    """Interactive configuration wizard for Notion Scriba."""
     
     def __init__(self):
+        """Initialize the setup wizard."""
         self.config: Dict[str, str] = {}
-        self.env_path = Path.cwd() / ".env"
+        self.notion_token: Optional[str] = None
         
-    def run(self):
-        """Run the interactive setup wizard."""
+    def run(self) -> bool:
+        """Run the complete setup wizard.
+        
+        Returns:
+            True if setup completed successfully, False otherwise
+        """
         self._print_welcome()
         
         try:
             # Step 1: Get Notion token
-            self._get_notion_token()
+            if not self._get_notion_token():
+                return False
             
-            # Step 2: Choose mode (Pages vs Database)
+            # Step 2: Choose mode
             mode = self._choose_mode()
             
-            # Step 3: Get IDs based on mode
-            if mode == "pages":
-                self._setup_pages_mode()
+            # Step 3: Configure based on mode
+            if mode == "page":
+                self._setup_page_mode()
             else:
                 self._setup_database_mode()
             
-            # Step 4: Validate connection
-            if self._validate_notion_connection():
-                # Step 5: Save configuration
-                self._save_config()
-                self._print_success()
-            else:
-                self._print_error("Connection validation failed. Please check your credentials.")
-                sys.exit(1)
-                
+            # Step 4: Validate configuration
+            if not self._validate_config():
+                print("\n❌ Configuration validation failed!")
+                return False
+            
+            # Step 5: Save configuration
+            self._save_config()
+            
+            self._print_success()
+            return True
+            
         except KeyboardInterrupt:
-            print("\n\n❌ Setup cancelled by user.")
-            sys.exit(0)
+            print("\n\n⚠️  Setup cancelled by user.")
+            return False
         except Exception as e:
             print(f"\n\n❌ Setup failed: {e}")
-            sys.exit(1)
+            return False
     
     def _print_welcome(self):
         """Print welcome message."""
         print("\n" + "=" * 70)
-        print("🏛️  NOTION DOCS SYNAPSE - INTERACTIVE SETUP")
+        print("🏛️  NOTION SCRIBA - SETUP WIZARD")
         print("=" * 70)
-        print("\nThis wizard will help you configure Notion integration.")
-        print("\n📚 You'll need:")
-        print("   1. Notion Integration Token")
-        print("   2. Either: Page IDs (for direct pages)")
-        print("      Or:     Database ID (for organized docs)")
-        print("\n💡 Tip: Keep your Notion workspace open to copy IDs easily!")
-        print("=" * 70 + "\n")
+        print("\nWelcome to Notion Scriba configuration!")
+        print("This wizard will help you set up your Notion integration.\n")
+        print("You'll need:")
+        print("  • Notion Integration Token")
+        print("  • Page ID or Database ID\n")
     
-    def _get_notion_token(self):
-        """Get Notion integration token from user."""
-        print("📝 STEP 1: Notion Integration Token")
-        print("-" * 70)
-        print("\n🔑 Where to find your token:")
-        print("   1. Go to: https://www.notion.so/my-integrations")
-        print("   2. Click 'New integration'")
-        print("   3. Give it a name (e.g., 'Docs Generator')")
-        print("   4. Copy the 'Internal Integration Token'")
-        print("   5. In your Notion workspace, share the target page/database")
-        print("      with your integration (Share → Invite → Select your integration)")
-        print("\n⚠️  Token format: secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n")
-        
-        while True:
-            token = input("📋 Enter your Notion Integration Token: ").strip()
-            
-            if not token:
-                print("❌ Token cannot be empty. Please try again.\n")
-                continue
-            
-            if not token.startswith("secret_"):
-                print("⚠️  Warning: Token should start with 'secret_'")
-                confirm = input("   Continue anyway? (y/n): ").strip().lower()
-                if confirm != 'y':
-                    continue
-            
-            self.config['NOTION_TOKEN'] = token
-            print("✅ Token saved!\n")
-            break
-    
-    def _choose_mode(self) -> str:
-        """Let user choose between Pages or Database mode.
+    def _get_notion_token(self) -> bool:
+        """Get and validate Notion integration token.
         
         Returns:
-            "pages" or "database"
+            True if token obtained successfully, False otherwise
         """
-        print("\n📂 STEP 2: Choose Output Mode")
+        print("\n📝 NOTION INTEGRATION TOKEN")
         print("-" * 70)
-        print("\nHow do you want to organize your documentation?")
-        print("\n1️⃣  PAGES MODE (Simple)")
-        print("   → Documentation saved as standalone Notion pages")
-        print("   → Best for: Small projects, simple setups")
-        print("   → You need: 2 Page IDs (one for IT, one for EN)")
-        print("\n2️⃣  DATABASE MODE (Recommended)")
-        print("   → Documentation organized in Notion database(s)")
-        print("   → Best for: Multiple components, organized docs")
-        print("   → You need: 1 or 2 Database IDs")
-        print("   → Features: Filtering, sorting, properties, views")
-        print("\n💡 Recommendation: Choose DATABASE mode for better organization\n")
+        print("\n🔍 How to get your token:")
+        print("   1. Go to https://www.notion.so/my-integrations")
+        print("   2. Click '+ New integration'")
+        print("   3. Give it a name (e.g., 'Notion Scriba')")
+        print("   4. Select the workspace")
+        print("   5. Click 'Submit'")
+        print("   6. Copy the 'Internal Integration Token'\n")
+        print("   Token format: secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n")
         
         while True:
-            choice = input("👉 Enter your choice (1 for Pages, 2 for Database): ").strip()
+            token = input("👉 Enter your Notion token: ").strip()
             
-            if choice == "1":
-                return "pages"
-            elif choice == "2":
+            if not token:
+                print("   ❌ Token cannot be empty!")
+                continue
+            
+            if not token.startswith("secret_") and not token.startswith("ntn_"):
+                print("   ⚠️  Token should start with 'secret_' or 'ntn_'")
+                retry = input("   Continue anyway? [y/N]: ").strip().lower()
+                if retry != 'y':
+                    continue
+            
+            self.notion_token = token
+            self.config['NOTION_TOKEN'] = token
+            print("   ✅ Token saved!\n")
+            return True
+    
+    def _choose_mode(self) -> str:
+        """Let user choose between Page or Database mode.
+        
+        Returns:
+            "page" or "database"
+        """
+        print("\n🎯 DOCUMENTATION MODE")
+        print("-" * 70)
+        print("\nChoose your documentation mode:\n")
+        print("   📄 [P]age Mode - Single page for documentation")
+        print("      Best for: Simple projects, single documents")
+        print()
+        print("   🗄️  [D]atabase Mode - Database with multiple entries")
+        print("      Best for: Multiple components, structured docs\n")
+        
+        while True:
+            choice = input("👉 Choose mode [P/d]: ").strip().lower()
+            
+            if choice in ('', 'p', 'page'):
+                return "page"
+            elif choice in ('d', 'db', 'database'):
                 return "database"
             else:
-                print("❌ Invalid choice. Please enter 1 or 2.\n")
+                print("   ❌ Invalid choice! Enter 'p' for Page or 'd' for Database")
     
-    def _setup_pages_mode(self):
-        """Setup configuration for Pages mode."""
-        print("\n📄 PAGES MODE CONFIGURATION")
+    def _setup_page_mode(self):
+        """Setup configuration for Page mode (single page)."""
+        print("\n�� PAGE MODE CONFIGURATION")
         print("-" * 70)
-        print("\n🔍 How to find Page IDs:")
+        print("\n🔍 How to find Page ID:")
         print("   1. Open the target page in Notion")
-        print("   2. Click 'Share' → 'Copy link'")
+        print("   2. Click 'Share' -> 'Copy link'")
         print("   3. The ID is in the URL:")
         print("      https://notion.so/Page-Title-[THIS-IS-THE-ID]?v=...")
         print("   4. ID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n")
         
-        # Get Italian page ID
-        print("🇮🇹 Italian Documentation Page:")
-        it_page = self._get_notion_id("page", "IT")
-        self.config['NOTION_PAGE_IT'] = it_page
+        # Get page ID
+        print("📄 Documentation Page:")
+        page_id = self._get_notion_id("page")
+        self.config['NOTION_PAGE_ID'] = page_id
         
-        # Get English page ID
-        print("\n🇬🇧 English Documentation Page:")
-        en_page = self._get_notion_id("page", "EN")
-        self.config['NOTION_PAGE_EN'] = en_page
-        
-        print("\n✅ Pages configuration complete!\n")
+        print("\n✅ Page configuration complete!\n")
     
     def _setup_database_mode(self):
-        """Setup configuration for Database mode."""
-        print("\n🗄️  DATABASE MODE CONFIGURATION")
+        """Setup configuration for Database mode (single database)."""
+        print("\n��️  DATABASE MODE CONFIGURATION")
         print("-" * 70)
-        print("\n🔍 How to find Database IDs:")
+        print("\n🔍 How to find Database ID:")
         print("   1. Open the database in Notion (full-page view)")
-        print("   2. Click 'Share' → 'Copy link'")
+        print("   2. Click 'Share' -> 'Copy link'")
         print("   3. The ID is in the URL:")
         print("      https://notion.so/[THIS-IS-THE-ID]?v=...")
-        print("   4. ID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
-        print("\n💡 Setup Options:")
-        print("   A. Single database (recommended for bilingual docs)")
-        print("   B. Separate databases (one for IT, one for EN)\n")
+        print("   4. ID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx\n")
         
-        mode_choice = input("👉 Use single database (A) or separate (B)? [A/b]: ").strip().lower()
-        
-        if mode_choice == "b":
-            # Separate databases
-            print("\n🇮🇹 Italian Documentation Database:")
-            it_db = self._get_notion_id("database", "IT")
-            self.config['NOTION_DB_IT'] = it_db
-            
-            print("\n🇬🇧 English Documentation Database:")
-            en_db = self._get_notion_id("database", "EN")
-            self.config['NOTION_DB_EN'] = en_db
-        else:
-            # Single database
-            print("\n🌍 Multilingual Documentation Database:")
-            db_id = self._get_notion_id("database", "multilingual")
-            self.config['NOTION_DB_IT'] = db_id
-            self.config['NOTION_DB_EN'] = db_id
-            print("   ℹ️  Using same database for both languages")
+        # Get database ID
+        print("🗄️  Documentation Database:")
+        db_id = self._get_notion_id("database")
+        self.config['NOTION_DB'] = db_id
         
         print("\n✅ Database configuration complete!\n")
     
-    def _get_notion_id(self, id_type: str, language: str) -> str:
+    def _get_notion_id(self, id_type: str) -> str:
         """Get and validate a Notion ID from user.
         
         Args:
             id_type: "page" or "database"
-            language: Language label (IT, EN, multilingual)
             
         Returns:
             Validated Notion ID
         """
         while True:
-            notion_id = input(f"📋 Enter {language} {id_type} ID: ").strip()
+            notion_id = input(f"   Enter {id_type} ID: ").strip()
             
             if not notion_id:
-                print("❌ ID cannot be empty. Please try again.\n")
+                print("   ❌ ID cannot be empty!")
                 continue
             
-            # Clean ID (remove dashes if present)
-            notion_id = notion_id.replace("-", "")
+            # Clean the ID (remove dashes, extract from URL)
+            cleaned_id = self._clean_notion_id(notion_id)
             
-            # Validate format (32 hex characters)
-            if len(notion_id) != 32:
-                print(f"⚠️  Warning: ID should be 32 characters (got {len(notion_id)})")
-                confirm = input("   Continue anyway? (y/n): ").strip().lower()
-                if confirm != 'y':
-                    continue
+            if not self._validate_notion_id(cleaned_id):
+                print("   ❌ Invalid ID format!")
+                print(f"   Expected: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+                continue
             
-            # Re-add dashes in standard format
-            formatted_id = f"{notion_id[:8]}-{notion_id[8:12]}-{notion_id[12:16]}-{notion_id[16:20]}-{notion_id[20:]}"
-            print(f"   ✅ Formatted ID: {formatted_id}")
-            return formatted_id
+            return cleaned_id
     
-    def _validate_notion_connection(self) -> bool:
-        """Validate Notion connection with provided credentials.
+    def _clean_notion_id(self, notion_id: str) -> str:
+        """Clean and extract Notion ID from various formats.
+        
+        Args:
+            notion_id: Raw ID or URL
+            
+        Returns:
+            Cleaned ID in canonical format
+        """
+        # If it's a URL, extract the ID
+        if 'notion.so/' in notion_id:
+            # Extract ID from URL
+            match = re.search(r'([a-f0-9]{32}|[a-f0-9-]{36})', notion_id)
+            if match:
+                notion_id = match.group(1)
+        
+        # Remove all dashes
+        notion_id = notion_id.replace('-', '')
+        
+        # Add dashes in standard format if missing
+        if len(notion_id) == 32 and '-' not in notion_id:
+            notion_id = f"{notion_id[:8]}-{notion_id[8:12]}-{notion_id[12:16]}-{notion_id[16:20]}-{notion_id[20:]}"
+        
+        return notion_id
+    
+    def _validate_notion_id(self, notion_id: str) -> bool:
+        """Validate Notion ID format.
+        
+        Args:
+            notion_id: ID to validate
+            
+        Returns:
+            True if valid format, False otherwise
+        """
+        # Standard UUID format
+        uuid_pattern = r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+        return bool(re.match(uuid_pattern, notion_id, re.IGNORECASE))
+    
+    def _validate_config(self) -> bool:
+        """Validate configuration by testing Notion API connection.
         
         Returns:
-            True if connection successful, False otherwise
+            True if validation successful, False otherwise
         """
-        print("\n🔍 STEP 3: Validating Connection")
+        print("\n🔍 VALIDATING CONFIGURATION")
         print("-" * 70)
-        print("\nTesting Notion API connection...")
         
-        token = self.config.get('NOTION_TOKEN')
-        if not token:
-            return False
+        if not requests:
+            print("⚠️  Requests library not available, skipping validation")
+            return True
         
         headers = {
-            "Authorization": f"Bearer {token}",
+            "Authorization": f"Bearer {self.notion_token}",
             "Notion-Version": "2022-06-28",
             "Content-Type": "application/json"
         }
         
-        # Test token validity by listing users
+        # Test page or database access
+        if 'NOTION_PAGE_ID' in self.config:
+            resource_type = "page"
+            resource_id = self.config['NOTION_PAGE_ID']
+        else:
+            resource_type = "database"
+            resource_id = self.config['NOTION_DB']
+        
+        print(f"\nTesting {resource_type} access...")
+        
         try:
-            response = requests.get(
-                "https://api.notion.com/v1/users/me",
-                headers=headers,
-                timeout=10
-            )
+            url = f"https://api.notion.com/v1/{resource_type}s/{resource_id}"
+            response = requests.get(url, headers=headers, timeout=10)
             
             if response.status_code == 200:
-                print("✅ Token is valid!")
-                user_data = response.json()
-                bot_name = user_data.get('name', 'Unknown')
-                print(f"   Connected as: {bot_name}")
+                print(f"   ✅ {resource_type.capitalize()} accessible!")
                 return True
             elif response.status_code == 401:
-                print("❌ Invalid token. Please check your integration token.")
+                print(f"   ❌ Authentication failed! Check your token.")
+                return False
+            elif response.status_code == 404:
+                print(f"   ❌ {resource_type.capitalize()} not found!")
+                print(f"   Make sure the integration has access to the {resource_type}.")
                 return False
             else:
-                print(f"⚠️  Unexpected response: {response.status_code}")
-                print(f"   Message: {response.text}")
-                return False
+                print(f"   ⚠️  Unexpected response: {response.status_code}")
+                print(f"   {response.text[:200]}")
+                retry = input("\n   Continue anyway? [y/N]: ").strip().lower()
+                return retry == 'y'
                 
-        except requests.RequestException as e:
-            print(f"❌ Connection error: {e}")
-            return False
+        except Exception as e:
+            print(f"   ⚠️  Validation failed: {e}")
+            retry = input("\n   Continue anyway? [y/N]: ").strip().lower()
+            return retry == 'y'
     
     def _save_config(self):
         """Save configuration to .env file."""
-        print("\n💾 STEP 4: Saving Configuration")
+        print("\n💾 SAVING CONFIGURATION")
         print("-" * 70)
         
-        # Check if .env exists
-        if self.env_path.exists():
-            print(f"\n⚠️  File {self.env_path} already exists.")
-            action = input("   (O)verwrite, (M)erge, or (C)ancel? [M/o/c]: ").strip().lower()
-            
-            if action == 'c':
-                print("❌ Configuration not saved.")
-                sys.exit(0)
-            elif action == 'o':
-                self._write_new_env()
-            else:  # Merge
-                self._merge_env()
-        else:
-            self._write_new_env()
+        env_path = Path.cwd() / '.env'
         
-        print(f"\n✅ Configuration saved to: {self.env_path}")
-    
-    def _write_new_env(self):
-        """Write new .env file."""
-        with open(self.env_path, 'w') as f:
-            f.write("# Notion Docs Synapse Configuration\n")
-            f.write("# Generated by setup wizard\n\n")
+        # Check if .env exists
+        if env_path.exists():
+            print(f"\n⚠️  .env file already exists at: {env_path}")
+            choice = input("   [B]ackup and replace, [M]erge, or [C]ancel? [b/m/C]: ").strip().lower()
             
+            if choice == 'c' or not choice:
+                print("   ❌ Configuration not saved.")
+                return
+            elif choice == 'b':
+                backup_path = env_path.with_suffix('.env.backup')
+                env_path.rename(backup_path)
+                print(f"   ✅ Backed up to: {backup_path}")
+                self._write_env_file(env_path)
+            elif choice == 'm':
+                self._merge_env_file(env_path)
+        else:
+            self._write_env_file(env_path)
+        
+        print(f"\n✅ Configuration saved to: {env_path}\n")
+    
+    def _write_env_file(self, path: Path):
+        """Write new .env file.
+        
+        Args:
+            path: Path to .env file
+        """
+        with open(path, 'w') as f:
+            f.write("# Notion Scriba Configuration\n")
+            f.write("# Generated by setup wizard\n\n")
             f.write("# Notion Integration\n")
             f.write(f"NOTION_TOKEN={self.config['NOTION_TOKEN']}\n")
             
-            if 'NOTION_PAGE_IT' in self.config:
-                f.write(f"NOTION_PAGE_IT={self.config['NOTION_PAGE_IT']}\n")
-                f.write(f"NOTION_PAGE_EN={self.config['NOTION_PAGE_EN']}\n")
+            if 'NOTION_PAGE_ID' in self.config:
+                f.write(f"NOTION_PAGE_ID={self.config['NOTION_PAGE_ID']}\n")
             
-            if 'NOTION_DB_IT' in self.config:
-                f.write(f"NOTION_DB_IT={self.config['NOTION_DB_IT']}\n")
-                f.write(f"NOTION_DB_EN={self.config['NOTION_DB_EN']}\n")
+            if 'NOTION_DB' in self.config:
+                f.write(f"NOTION_DB={self.config['NOTION_DB']}\n")
             
-            f.write("\n# LLM Provider (choose one)\n")
+            f.write("\n# LLM Provider (default: openai)\n")
             f.write("LLM_PROVIDER=openai\n")
-            f.write("# OPENAI_API_KEY=your-key-here\n")
-            f.write("# ANTHROPIC_API_KEY=your-key-here\n")
-            f.write("# GOOGLE_API_KEY=your-key-here\n")
+            f.write("# OPENAI_API_KEY=sk-your-key-here\n")
     
-    def _merge_env(self):
-        """Merge new config with existing .env file."""
+    def _merge_env_file(self, path: Path):
+        """Merge configuration with existing .env file.
+        
+        Args:
+            path: Path to existing .env file
+        """
         # Read existing content
-        existing_lines = []
-        existing_keys = set()
+        with open(path, 'r') as f:
+            lines = f.readlines()
         
-        with open(self.env_path, 'r') as f:
-            for line in f:
-                existing_lines.append(line)
-                if '=' in line and not line.strip().startswith('#'):
-                    key = line.split('=')[0].strip()
-                    existing_keys.add(key)
+        # Update or append Notion config
+        notion_keys = {'NOTION_TOKEN', 'NOTION_PAGE_ID', 'NOTION_DB'}
+        updated_keys = set()
         
-        # Write merged content
-        with open(self.env_path, 'w') as f:
-            # Write existing lines, replacing Notion keys
-            for line in existing_lines:
-                if '=' in line and not line.strip().startswith('#'):
-                    key = line.split('=')[0].strip()
-                    if key in self.config:
-                        f.write(f"{key}={self.config[key]}\n")
-                        continue
-                f.write(line)
+        with open(path, 'w') as f:
+            for line in lines:
+                key = line.split('=')[0].strip()
+                if key in notion_keys and key in self.config:
+                    f.write(f"{key}={self.config[key]}\n")
+                    updated_keys.add(key)
+                else:
+                    f.write(line)
             
-            # Add new Notion keys if they don't exist
-            f.write("\n# Notion Configuration (updated by setup wizard)\n")
-            for key, value in self.config.items():
-                if key not in existing_keys:
-                    f.write(f"{key}={value}\n")
+            # Append new keys
+            for key in notion_keys:
+                if key in self.config and key not in updated_keys:
+                    f.write(f"{key}={self.config[key]}\n")
     
     def _print_success(self):
         """Print success message with next steps."""
         print("\n" + "=" * 70)
         print("🎉 SETUP COMPLETE!")
         print("=" * 70)
-        print("\n✅ Notion integration configured successfully!")
-        print(f"\n📄 Configuration saved to: {self.env_path}")
-        print("\n🚀 Next steps:")
-        print("   1. Set up your LLM provider (OpenAI, Claude, Gemini, etc.)")
-        print("      → Add API key to .env file")
-        print("   2. Run your first documentation generation:")
-        print("      → notion-docs --component myproject --template technical-deep-dive")
-        print("\n📚 Documentation: README.md")
-        print("💡 List providers: notion-docs --list-providers")
-        print("\n" + "=" * 70 + "\n")
-    
-    def _print_error(self, message: str):
-        """Print error message."""
-        print("\n" + "=" * 70)
-        print("❌ SETUP FAILED")
-        print("=" * 70)
-        print(f"\n{message}")
-        print("\n💡 Need help?")
-        print("   → Check documentation: docs/notion_setup.md")
-        print("   → Verify Notion integration: https://www.notion.so/my-integrations")
-        print("   → Ensure integration has access to your pages/databases")
+        print("\nYour Notion Scriba is now configured!\n")
+        print("Next steps:")
+        print("  1. Add your LLM API key to .env:")
+        print("     OPENAI_API_KEY=sk-your-key-here")
+        print()
+        print("  2. Run your first documentation generation:")
+        print("     scriba --component myapp --template technical-deep-dive")
+        print()
+        print("  3. Or use interactive mode:")
+        print("     scriba -i")
+        print()
+        print("For help: scriba --help")
         print("\n" + "=" * 70 + "\n")
 
 
 def run_setup_wizard():
-    """Entry point for setup wizard."""
-    wizard = NotionSetupWizard()
-    wizard.run()
+    """Run the setup wizard (entry point for CLI)."""
+    wizard = SetupWizard()
+    success = wizard.run()
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":

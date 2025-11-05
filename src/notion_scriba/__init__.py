@@ -16,15 +16,15 @@
 
 
 """
-Notion Scriba - AI-powered bilingual documentation generator for Notion.
+Notion Scriba - AI-powered documentation generator for Notion.
 
-A modular system for automatic bilingual documentation generation with support
+A modular system for automatic documentation generation with support
 for multiple LLM providers and direct Notion synchronization.
 
 "Verba volant, scripta manent" - Spoken words fly away, written words remain.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # Core components
 from .llm import LLMProviderFactory, BaseLLMProvider, LLMConfig

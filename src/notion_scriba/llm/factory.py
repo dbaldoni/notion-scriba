@@ -17,14 +17,17 @@
 
 """Factory for creating LLM provider instances."""
 
-from typing import Type, Dict
+from typing import Type, Dict, TYPE_CHECKING
 
 from .base import BaseLLMProvider, LLMConfig
 from .openai_provider import OpenAIProvider
-from .anthropic_provider import AnthropicProvider
-from .google_provider import GoogleProvider
 from .deepseek_provider import DeepSeekProvider
 from .ollama_provider import OllamaProvider
+
+# Optional providers - imported lazily
+if TYPE_CHECKING:
+    from .anthropic_provider import AnthropicProvider
+    from .google_provider import GoogleProvider
 
 
 class LLMProviderFactory:
@@ -39,13 +42,9 @@ class LLMProviderFactory:
         >>> response = provider.generate("Write documentation for...")
     """
     
-    # Registry of available providers
+    # Registry of available providers (only core providers loaded initially)
     _providers: Dict[str, Type[BaseLLMProvider]] = {
         "openai": OpenAIProvider,
-        "anthropic": AnthropicProvider,
-        "claude": AnthropicProvider,  # Alias for convenience
-        "google": GoogleProvider,
-        "gemini": GoogleProvider,  # Alias for convenience
         "deepseek": DeepSeekProvider,
         "ollama": OllamaProvider,
     }
@@ -73,6 +72,43 @@ class LLMProviderFactory:
     }
     
     @classmethod
+    def _load_optional_provider(cls, provider: str) -> None:
+        """Dynamically load optional provider if not already loaded.
+        
+        Args:
+            provider: Provider name to load (anthropic, claude, google, gemini)
+        """
+        provider_lower = provider.lower()
+        
+        # Skip if already loaded
+        if provider_lower in cls._providers:
+            return
+            
+        # Load Anthropic provider
+        if provider_lower in ("anthropic", "claude"):
+            try:
+                from .anthropic_provider import AnthropicProvider
+                cls._providers["anthropic"] = AnthropicProvider
+                cls._providers["claude"] = AnthropicProvider
+            except ImportError:
+                raise ImportError(
+                    "Anthropic support not installed. "
+                    "Install with: pip install notion-scriba[anthropic]"
+                )
+        
+        # Load Google provider
+        elif provider_lower in ("google", "gemini"):
+            try:
+                from .google_provider import GoogleProvider
+                cls._providers["google"] = GoogleProvider
+                cls._providers["gemini"] = GoogleProvider
+            except ImportError:
+                raise ImportError(
+                    "Google Gemini support not installed. "
+                    "Install with: pip install notion-scriba[google]"
+                )
+    
+    @classmethod
     def create(cls, provider: str, config: LLMConfig) -> BaseLLMProvider:
         """Create LLM provider instance.
         
@@ -85,6 +121,7 @@ class LLMProviderFactory:
             
         Raises:
             ValueError: If provider is unknown
+            ImportError: If optional provider dependencies not installed
             
         Example:
             >>> config = LLMConfig(api_key="sk-...", model="gpt-4o")
@@ -92,12 +129,16 @@ class LLMProviderFactory:
         """
         provider_lower = provider.lower()
         
+        # Try to load optional provider if not in registry
         if provider_lower not in cls._providers:
-            available = ", ".join(sorted(set(cls._providers.keys())))
-            raise ValueError(
-                f"Unknown provider: '{provider}'. "
-                f"Available providers: {available}"
-            )
+            if provider_lower in ("anthropic", "claude", "google", "gemini"):
+                cls._load_optional_provider(provider_lower)
+            else:
+                available = ", ".join(sorted(set(cls._providers.keys())))
+                raise ValueError(
+                    f"Unknown provider: '{provider}'. "
+                    f"Available providers: {available}"
+                )
         
         provider_class = cls._providers[provider_lower]
         return provider_class(config)
