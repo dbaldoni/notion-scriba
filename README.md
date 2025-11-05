@@ -2,8 +2,10 @@
 
 **AI-powered documentation generator with multi-LLM support and Notion integration**
 
+[![PyPI version](https://badge.fury.io/py/notion-scriba.svg)](https://pypi.org/project/notion-scriba/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Downloads](https://static.pepy.tech/badge/notion-scriba)](https://pepy.tech/project/notion-scriba)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ---
